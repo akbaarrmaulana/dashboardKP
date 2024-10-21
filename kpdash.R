@@ -3,6 +3,7 @@ library(shinydashboard)
 library(plotly)
 library(dashboardthemes)
 library(shinydashboardPlus)
+library(dplyr)
 library(sf)
 library(ggplot2)
 library(plotly)
@@ -237,18 +238,17 @@ body <- dashboardBody(
         fluidRow(
           column(width = 7,
                  box(
+                   uiOutput("dmap"),
                    width = 12,
                    height = "150px",
                    plotlyOutput("map")
                  )),
           column(width = 5,
                  box(
+                   radioButtons(inputId = "radbut", " ", choices = c("Minimum","Maximum"),inline = T),
                    width = 12,
-                   height = "75px"
-                 ),
-                 box(
-                   width = 12,
-                   height = "75px"
+                   height = "auto",
+                   plotOutput("bar", height = "350px")
                  ))
         )
       )
@@ -323,14 +323,74 @@ server <- function(input,output,session){
        left_join(a1, by = c("ADM2_EN" = "KabupatenKota"))
      
      p2 <- ggplot(data = merged_data) +
-       geom_sf(aes(fill = X))+
-       scale_fill_gradient(low = "lightblue", high = "darkblue")+
+       geom_sf(aes(fill = X, text = ADM2_EN))+
+       scale_fill_gradient(low = "white", high = "red")+
        labs(title = paste("Sebaran",input$var,st,sep = " "))+
        theme_minimal()+
          xlim(111, 115) + 
          ylim(9, 6.5) + 
        theme(plot.title = element_text(hjust = 0.5, size = 20))
      ggplotly(p2)
+   })
+   
+   output$bar <- renderPlot({
+     if(input$tahun == "All"){
+       if(input$radbut=="Minimum"){
+         dtot <- data %>% 
+           group_by(KabupatenKota) %>% 
+           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+           arrange(desc(total_pengaduan))%>% 
+           slice_min(order_by = total_pengaduan, n = 5)
+         arr <- -dtot$total_pengaduan
+       }else{
+         dtot <- data %>% 
+           group_by(KabupatenKota) %>% 
+           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+           arrange(desc(total_pengaduan))%>% 
+           slice_max(order_by = total_pengaduan, n = 5)
+         arr <- dtot$total_pengaduan
+       }
+     }else if(input$tahun==2023){
+       if(input$radbut=="Minimum"){
+         dtot <- df2023 %>% 
+           group_by(KabupatenKota) %>% 
+           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+           arrange(desc(total_pengaduan))%>% 
+           slice_min(order_by = total_pengaduan, n = 5)
+         arr <- -dtot$total_pengaduan
+       }else{
+         dtot <- df2023 %>% 
+           group_by(KabupatenKota) %>% 
+           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+           arrange(desc(total_pengaduan))%>% 
+           slice_max(order_by = total_pengaduan, n = 5)
+         arr <- dtot$total_pengaduan
+       }
+     }else{
+       if(input$radbut=="Minimum"){
+         dtot <- df2024 %>% 
+           group_by(KabupatenKota) %>% 
+           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+           arrange(desc(total_pengaduan))%>% 
+           slice_min(order_by = total_pengaduan, n = 5)
+         arr <- -dtot$total_pengaduan
+       }else{
+         dtot <- df2024 %>% 
+           group_by(KabupatenKota) %>% 
+           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+           arrange(desc(total_pengaduan))%>% 
+           slice_max(order_by = total_pengaduan, n = 5)
+         arr <- dtot$total_pengaduan
+       }
+     }
+     p2 <- ggplot(dtot, aes(x = reorder(KabupatenKota, arr), y = total_pengaduan)) + 
+       geom_bar(stat = "identity", fill = "maroon") +  
+       labs(x = "Kabupaten/Kota", y = "Jumlah Pengaduan") +  
+       theme(axis.text.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5, margin = margin(t = 10))) + 
+       geom_text(aes(label = total_pengaduan), vjust = -0.5, 
+                 color = "black", size = 5) +
+       coord_flip()
+     p2
    })
 }
 
