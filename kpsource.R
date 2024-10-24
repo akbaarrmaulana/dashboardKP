@@ -16,7 +16,7 @@ coln <- c("Pengaduan",
           "Belum Terverifikasi","Belum Ditindaklanjuti",
           "Proses","Selesai","Tunda","Arsip")
 
-df2023 <- data %>% filter(data$Tahun==2023)
+df2023 <- data %>% filter(Tahun==2023)
 df2024 <- data %>% filter(Tahun==2024)
 
 aa <- data %>% filter(periode_update == "Januari 2023")
@@ -76,3 +76,7 @@ p2
 kota <- data[grepl("Kota", data$KabupatenKota), ]
 kab <- data[!grepl("Kota", data$KabupatenKota), ]
 
+kota2023 <- kota %>% filter(Tahun==2023)
+kota2024 <- kota %>% filter(Tahun==2024)
+kab2023 <- kab %>% filter(Tahun==2023)
+kab2024 <- kab %>% filter(Tahun==2024)

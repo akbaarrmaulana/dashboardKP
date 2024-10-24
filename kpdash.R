@@ -31,9 +31,12 @@ sidebar <- dashboardSidebar(width = 320,
                               menuItem(".SP4N LAPOR",
                                        tabName = "span",
                                        icon = icon("mobile-screen-button")),
-                              menuItem("Home",
+                              menuItem("Statistik Tingkat Provinsi",
                                        tabName = "home",
-                                       icon = icon("home"))
+                                       icon = icon("hotel")),
+                              menuItem("Statistik Tingkat Kabupaten/Kota",
+                                       tabName = "kabkot",
+                                       icon = icon("building"))
                             ))
 body <- dashboardBody(
   shinyDashboardThemeDIY(
@@ -162,6 +165,20 @@ body <- dashboardBody(
   tags$style(HTML("
       .info-box { min-height: 125px; }  /* Set the desired height here */
       .info-box-icon { height: 125px; line-height: 125px; }
+      
+      .box.box-solid.box-success>.box-header {
+        color:#fff;
+        background:#800000
+      }
+      .box.box-solid.box-success{
+      border-bottom-color:#fff;
+      border-left-color:#fff;
+      border-right-color:#fff;
+      border-top-color:#fff;
+      }
+      .box.box-success .box-title {
+          color: white !important;
+        }
     ")),
   div(
     id="main_content",
@@ -238,18 +255,83 @@ body <- dashboardBody(
         fluidRow(
           column(width = 7,
                  box(
-                   uiOutput("dmap"),
+                   title = uiOutput("dmap"),
                    width = 12,
                    height = "150px",
-                   plotlyOutput("map")
+                   plotlyOutput("map"),
+                   solidHeader = T,
+                   status = "success"
                  )),
           column(width = 5,
                  box(
-                   radioButtons(inputId = "radbut", " ", choices = c("Minimum","Maximum"),inline = T),
+                   title = uiOutput("toph"),
+                   radioButtons(inputId = "radbut", " ", choices = c("Terendah","Tertinggi"),inline = T),
                    width = 12,
                    height = "auto",
-                   plotOutput("bar", height = "350px")
+                   plotOutput("bar", height = "350px"),
+                   solidHeader = T,
+                   status = "success"
                  ))
+        ),
+        fluidRow(
+          column(
+            width = 7,
+            box(
+              title = uiOutput("tbark"),
+              width = 12,
+              height = "150px",
+              plotOutput("bark"),
+              solidHeader = T,
+              status = "success"
+            )
+          ),
+          column(
+            width = 5,
+            box(
+              title = uiOutput("tbarko"),
+              width = 12,
+              height = "150px",
+              plotOutput("barko"),
+              solidHeader = T,
+              status = "success"
+            )
+          )
+        )
+      ),
+      tabItem(
+        tabName = "kabkot",
+        fluidRow(
+          box(
+            width = 12,
+            title = "",
+            status = "success",
+            column(width = 2,
+                   selectInput("kk","Kabupaten/Kota",
+                               choices = unique(data$KabupatenKota), selected = "Kota Surabaya")),
+            column(width = 3,
+                   div(imageOutput("logopr",
+                                   width = "100%", height = "200px"), 
+                       style = "margin-left:30px")),
+            column(width = 4,
+                   navPills(id = "topthree",
+                            navPillsItem(
+                              left = "3 Basar Kabupaten Kota",
+                              color = "green"
+                            ),
+                            navPillsItem(
+                              left = textOutput("top1"),
+                              right = textOutput("top11")
+                            ),
+                            navPillsItem(
+                              left = textOutput("top2"),
+                              right = textOutput("top22")
+                            ),
+                            navPillsItem(
+                              left = textOutput("top3"),
+                              right = textOutput("top33")
+                            )
+                   ))
+          )
         )
       )
     )
@@ -260,6 +342,53 @@ ui = dashboardPage(header = header,
                    body = body)
 
 server <- function(input,output,session){
+  dataserver <- reactive({
+    if(input$bulan=="All"){
+      if(input$tahun=="All"){
+        ds <- data
+      }else if(input$tahun==2023){
+        ds <- df2023
+      }else{
+        ds <- df2024
+      }
+    }else{
+      fil <- paste(input$bulan, input$tahun, sep = " ")
+      ds <- data %>% filter(periode_update==fil)
+    }
+    ds
+  })
+  
+  datakota <- reactive({
+    if(input$bulan=="All"){
+      if(input$tahun=="All"){
+        ds <- kota
+      }else if(input$tahun==2023){
+        ds <- kota2023
+      }else{
+        ds <- kota2024
+      }
+    }else{
+      fil <- paste(input$bulan, input$tahun, sep = " ")
+      ds <- kota %>% filter(periode_update==fil)
+    }
+    ds
+  })
+  datakab <- reactive({
+    if(input$bulan=="All"){
+      if(input$tahun=="All"){
+        ds <- kab
+      }else if(input$tahun==2023){
+        ds <- kab2023
+      }else{
+        ds <- kab2024
+      }
+    }else{
+      fil <- paste(input$bulan, input$tahun, sep = " ")
+      ds <- kab %>% filter(periode_update==fil)
+    }
+    ds
+  })
+  
    output$jml <- renderValueBox({
     if(input$tahun=="All"){
       st = "All"
@@ -289,10 +418,38 @@ server <- function(input,output,session){
     infoBox(tags$h4(paste("Jumlah ",input$var), style = "font-Weight:bold"),
             value = tags$h6(st),
             subtitle = tags$h4(paste(sum(a2))),
-            color = "red",
+            color = "maroon",
             fill = F,
             icon = icon("comments"))
   })
+   
+   output$dmap <- renderUI({
+     if(input$tahun=="All"){
+       a <- "2023-2024"
+     }else{
+       a <- input$tahun
+     }
+     if(input$bulan=="All"){
+       b <- ""
+     }else{
+       b <- input$bulan
+     }
+     strong(paste("Sebaran",input$var,b,a))
+   })
+   
+   output$toph <- renderUI({
+     if(input$tahun=="All"){
+       a <- "2023-2024"
+     }else{
+       a <- input$tahun
+     }
+     if(input$bulan=="All"){
+       b <- ""
+     }else{
+       b <- input$bulan
+     }
+     strong(paste("Top 5",input$var,input$radbut,b,a))
+   })
    
    output$map <- renderPlotly({
      if(input$tahun=="All"){
@@ -324,8 +481,7 @@ server <- function(input,output,session){
      
      p2 <- ggplot(data = merged_data) +
        geom_sf(aes(fill = X, text = ADM2_EN))+
-       scale_fill_gradient(low = "white", high = "red")+
-       labs(title = paste("Sebaran",input$var,st,sep = " "))+
+       scale_fill_gradient(low = "white", high = "maroon")+
        theme_minimal()+
          xlim(111, 115) + 
          ylim(9, 6.5) + 
@@ -334,54 +490,20 @@ server <- function(input,output,session){
    })
    
    output$bar <- renderPlot({
-     if(input$tahun == "All"){
-       if(input$radbut=="Minimum"){
-         dtot <- data %>% 
-           group_by(KabupatenKota) %>% 
-           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
-           arrange(desc(total_pengaduan))%>% 
-           slice_min(order_by = total_pengaduan, n = 5)
-         arr <- -dtot$total_pengaduan
-       }else{
-         dtot <- data %>% 
-           group_by(KabupatenKota) %>% 
-           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
-           arrange(desc(total_pengaduan))%>% 
-           slice_max(order_by = total_pengaduan, n = 5)
-         arr <- dtot$total_pengaduan
-       }
-     }else if(input$tahun==2023){
-       if(input$radbut=="Minimum"){
-         dtot <- df2023 %>% 
-           group_by(KabupatenKota) %>% 
-           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
-           arrange(desc(total_pengaduan))%>% 
-           slice_min(order_by = total_pengaduan, n = 5)
-         arr <- -dtot$total_pengaduan
-       }else{
-         dtot <- df2023 %>% 
-           group_by(KabupatenKota) %>% 
-           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
-           arrange(desc(total_pengaduan))%>% 
-           slice_max(order_by = total_pengaduan, n = 5)
-         arr <- dtot$total_pengaduan
-       }
+     if(input$radbut=="Terendah"){
+       dtot <- dataserver() %>% 
+         group_by(KabupatenKota) %>% 
+         summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+         arrange(desc(total_pengaduan))%>% 
+         slice_min(order_by = total_pengaduan, n = 5)
+       arr <- -dtot$total_pengaduan
      }else{
-       if(input$radbut=="Minimum"){
-         dtot <- df2024 %>% 
-           group_by(KabupatenKota) %>% 
-           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
-           arrange(desc(total_pengaduan))%>% 
-           slice_min(order_by = total_pengaduan, n = 5)
-         arr <- -dtot$total_pengaduan
-       }else{
-         dtot <- df2024 %>% 
-           group_by(KabupatenKota) %>% 
-           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
-           arrange(desc(total_pengaduan))%>% 
-           slice_max(order_by = total_pengaduan, n = 5)
-         arr <- dtot$total_pengaduan
-       }
+       dtot <- dataserver() %>% 
+         group_by(KabupatenKota) %>% 
+         summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+         arrange(desc(total_pengaduan))%>% 
+         slice_max(order_by = total_pengaduan, n = 5)
+       arr <- dtot$total_pengaduan
      }
      p2 <- ggplot(dtot, aes(x = reorder(KabupatenKota, arr), y = total_pengaduan)) + 
        geom_bar(stat = "identity", fill = "maroon") +  
@@ -391,6 +513,84 @@ server <- function(input,output,session){
                  color = "black", size = 5) +
        coord_flip()
      p2
+   })
+   
+   max_barko_value <- reactive({
+       dtot <- datakota() %>% 
+         group_by(KabupatenKota) %>% 
+         summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+         arrange(desc(total_pengaduan))
+    
+     max(dtot$total_pengaduan, na.rm = TRUE)
+   })
+   
+   output$bark <- renderPlot({
+         dtot <- datakab() %>% 
+           group_by(KabupatenKota) %>% 
+           summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+           arrange(desc(total_pengaduan))
+         arr <- -dtot$total_pengaduan
+     
+     ylim_max <- max_barko_value() * 1.05
+     p3 <- ggplot(dtot, aes(x = reorder(KabupatenKota, arr), y = total_pengaduan)) + 
+       geom_bar(stat = "identity", fill = "maroon") +  
+       labs(x = "Kabupaten/Kota", y = "Jumlah Pengaduan") +  
+       theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5, margin = margin(t = 10))) + 
+       geom_text(aes(label = total_pengaduan), vjust = -0.5, 
+                 color = "black", size = 3)+
+       ylim(0,ylim_max)
+     p3
+   })
+   
+   output$barko <- renderPlot({
+    dtot <- datakota() %>% 
+         group_by(KabupatenKota) %>% 
+         summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
+         arrange(desc(total_pengaduan))
+       arr <- -dtot$total_pengaduan
+     ylim_max <- max_barko_value() * 1.05
+     p4 <- ggplot(dtot, aes(x = reorder(KabupatenKota, arr), y = total_pengaduan)) + 
+       geom_bar(stat = "identity", fill = "maroon") +  
+       labs(x = "Kabupaten/Kota", y = "Jumlah Pengaduan") +  
+       theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5, margin = margin(t = 10))) + 
+       geom_text(aes(label = total_pengaduan), vjust = -0.5, 
+                 color = "black", size = 3)+
+       ylim(0,ylim_max)
+     p4
+   })
+   
+   output$tbark <- renderUI({
+     if(input$tahun=="All"){
+       a <- "2023-2024"
+     }else{
+       a <- input$tahun
+     }
+     if(input$bulan=="All"){
+       b <- ""
+     }else{
+       b <- input$bulan
+     }
+     strong(paste("Jumlah",input$var,"Setiap Kabupaten pada",b,a))
+   })
+   output$tbarko <- renderUI({
+     if(input$tahun=="All"){
+       a <- "2023-2024"
+     }else{
+       a <- input$tahun
+     }
+     if(input$bulan=="All"){
+       b <- ""
+     }else{
+       b <- input$bulan
+     }
+     strong(paste("Jumlah",input$var,"Setiap Kota pada",b,a))
+   })
+   
+   output$logopr <- renderImage({
+     ppp <- paste0("www/",input$prov,".png")
+     list(src=ppp, deleteFile=F,
+          height = 160,
+          width = 160)
    })
 }
 
