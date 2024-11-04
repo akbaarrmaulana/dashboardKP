@@ -5,8 +5,10 @@ library(dashboardthemes)
 library(shinydashboardPlus)
 library(dplyr)
 library(sf)
+library(DT)
 library(ggplot2)
 library(plotly)
+library(shinyjs)
 
 source("kpsource.R")
 
@@ -19,7 +21,7 @@ dropdownMenuCustom <- function() {
                  "Website SP4N Lapor")
   )
 }
-header <- dashboardHeader(title = tagList(span(class = "logo-lg", "Dashboard SP4N Lapor"),
+header <- dashboardHeader(title = tagList(span(class = "logo-lg", "Dashboard"),
                                           img(
                                             src = "https://raw.githubusercontent.com/akbaarrmaulana/akbaarrepo/main/lapor.png",
                                             style = "width: 35px"
@@ -28,7 +30,7 @@ header <- dashboardHeader(title = tagList(span(class = "logo-lg", "Dashboard SP4
                           dropdownMenuCustom())
 sidebar <- dashboardSidebar(width = 320,
                             sidebarMenu(
-                              menuItem(".SP4N LAPOR",
+                              menuItem("Tentang Dashboard",
                                        tabName = "span",
                                        icon = icon("mobile-screen-button")),
                               menuItem("Statistik Tingkat Provinsi",
@@ -176,63 +178,126 @@ body <- dashboardBody(
       border-right-color:#fff;
       border-top-color:#fff;
       }
+      
       .box.box-success .box-title {
           color: white !important;
-        }
+      }
+      .box.box-primary .box-header {
+        display: none;
+      }
+      .box.box-primary {
+        border-right: 2px solid #d3d3d3; 
+        border-bottom: 2px solid #d3d3d3;
+        border-top: 2px solid #ffffff;
+        border-left: 2px solid #ffffff;
+      }
     ")),
+  tags$script(HTML("
+      $(document).on('click', '.nav-item', function() {
+        var text = $(this).find('.nav-text-left').text().trim();
+        Shiny.setInputValue('selectedNav', text);
+      });
+    ")),
+  
+  # Custom CSS for styling
+  tags$style(HTML("
+      .nav-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border-bottom: 1px solid #e5e5e5;
+        cursor: pointer;
+      }
+      .nav-item:hover {
+        background-color: maroon;  /* Change hover background color to maroon */
+        color: white;  /* Change text color on hover */
+      }
+      .nav-text-left {
+        font-weight: bold;
+        color: #333;
+      }
+      .nav-text-right {
+        color: maroon;  /* Set number color to maroon */
+        font-weight: bold;
+      }
+      .nav-item:hover .nav-text-left,
+      .nav-item:hover .nav-text-right {
+        color: white;  /* Change both text and number color to white on hover */
+      }
+      
+      .full-width-button {
+          width: 100%;
+          background-color: #800000; /* Maroon color */
+          color: white;
+          font-weight: bold;
+          border-radius: 8px;
+          padding: 10px;
+          font-size: 16px;
+        }
+        .centered-buttons {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 10px;
+        }
+      
+    ")),
+  tags$style(HTML("
+    .content-wrapper, .right-side {
+        overflow-y: auto;
+    }
+    .content {
+        overflow-y: auto;
+    }
+  ")),
   div(
     id="main_content",
     tabItems(
       tabItem(
         tabName = "span",
         titlePanel(
-          h2(strong("Sistem Pengelolaan Pengaduan Pelayanan Publik Nasional (SP4N) - Layanan Aspirasi dan Pengaduan Online Rakyat (LAPOR)"),
+          h2(strong("Dashboard Pengaduan Pelayanan Publik Nasional"),
              style="text-align:center;",style = "margin-bottom:-20px;",style = "margin-top:-20px;")),
         br(),
-        carousel(
-          width = 12,
-          id = "mycr",
-          carouselItem(
-            caption = "YouTube Video",
-            tags$iframe(
-              width = "100%",
-              height = "500",
-              src = "https://www.youtube.com/embed/pVJlNv0Zgd0",
-              frameborder = "0",
-              allowfullscreen = TRUE
-            )
-          )
-          ),
         fluidRow(
-          box(title = strong("Tentang LAPOR!"), width = 12,
-              p("Pengelolaan pengaduan pelayanan publik di setiap organisasi penyelenggara di Indonesia belum terkelola secara efektif dan terintegrasi. 
-                Masing-masing organisasi penyelenggara mengelola pengaduan secara parsial dan tidak terkoordinir dengan baik. Akibatnya terjadi duplikasi 
-                penanganan pengaduan, atau bahkan bisa terjadi suatu pengaduan tidak ditangani oleh satupun organisasi penyelenggara, dengan alasan pengaduan 
-                bukan kewenangannya. Oleh karena itu, untuk mencapai visi dalam good governance maka perlu untuk mengintegrasikan sistem pengelolaan pengaduan 
-                pelayanan publik dalam satu pintu. Tujuannya, masyarakat memiliki satu saluran pengaduan secara Nasional.",
+          box(title = strong("Tentang Dashboard"), width = 12,
+              p("Dashboard Pengaduan Pelayanan Publik Nasional adalah sebuah alat interaktif yang 
+                dirancang untuk menyajikan", tags$strong("visualisasi data pengaduan publik di Jawa Timur"),". Dengan 
+                tujuan meningkatkan transparansi dan akuntabilitas dalam pengelolaan pengaduan, 
+                dashboard ini menawarkan berbagai grafik dan analisis yang memudahkan pemantauan 
+                dan evaluasi data pengaduan serta aspirasi masyarakat.
+                Dashboard ini adalah bagian dari dukungan terhadap",
+                tags$strong("Sistem Pengelolaan Pengaduan Pelayanan Publik Nasional (SP4N) Layanan Aspirasi dan 
+                Pengaduan Online Rakyat (LAPOR!)"), "yang berfokus pada 
+                aspek-aspek terkait pengelolaan pengaduan. Penggunaan dashboard ini diharapkan 
+                dapat memberikan wawasan yang lebih baik bagi pengambil keputusan dan pemangku 
+                kepentingan dalam memahami tren pengaduan serta merumuskan kebijakan yang lebih 
+                responsif terhadap kebutuhan masyarakat. Dengan fitur-fitur yang mudah digunakan, 
+                dashboard ini bertujuan untuk mempercepat proses analisis dan meningkatkan kualitas 
+                layanan publik di Jawa Timur.",
                 style = "text-align:justify"),
-              p("Untuk itu Pemerintah Republik Indonesia membentuk Sistem Pengelolaan Pengaduan Pelayanan Publik Nasional (SP4N) - Layanan Aspirasi dan 
-                Pengaduan Online Rakyat (LAPOR!) adalah layanan penyampaian semua aspirasi dan pengaduan masyarakat Indonesia melalui beberapa kanal 
-                pengaduan yaitu website www.lapor.go.id, SMS 1708 (Telkomsel, Indosat, Three), Twitter @lapor1708 serta aplikasi mobile (Android dan iOS). 
-                Lembaga pengelola SP4N-LAPOR! adalah Kementerian Pendayagunaan Aparatur Negara dan Reformasi Birokrasi (Kementerian PANRB) sebagai Pembina 
-                Pelayanan Publik, Kantor Staf Presiden (KSP) sebagai Pengawas Program Prioritas Nasional dan Ombudsman Republik Indonesia sebagai Pengawas 
-                Pelayanan Publik. LAPOR! telah ditetapkan sebagai Sistem Pengelolaan Pengaduan Pelayanan Publik Nasional (SP4N) berdasarkan Peraturan Presiden 
-                Nomor 76 Tahun 2013 dan Peraturan Menteri Pendayagunaan Aparatur Negara dan Reformasi Birokrasi Nomor 3 Tahun 2015.",
-                style = "text-align:justify"),
-              p("SP4N-LAPOR! dibentuk untuk merealisasikan kebijakan “no wrong door policy” yang menjamin hak masyarakat agar pengaduan dari manapun dan jenis 
-                apapun akan disalurkan kepada penyelenggara pelayanan publik yang berwenang menanganinya. SP4N bertujuan agar:",
-                style = "text-align:justify"),
-              HTML(
-                "
-                <ul>
-                  <li>Penyelenggara dapat mengelola pengaduan dari masyarakat secara sederhana, cepat, 
-                  tepat, tuntas, dan terkoordinasi dengan baik;</li>
-                  <li>Penyelenggara memberikan akses untuk partisipasi masyarakat dalam menyampaikan pengaduan; dan</li>
-                  <li>Meningkatkan kualitas pelayanan publik.</li>
-                "
-              ),
-              br(),
-              p("Source : https://jatim.lapor.go.id"))
+              p("Dalam tampilan utama dashboard, pengguna dapat melihat pilihan menu untuk", tags$strong("Statistik Tingkat 
+                Provinsi"), "dan", tags$strong("Statistik Tingkat Kabupaten/Kota"),", yang memungkinkan pemantauan pengaduan berdasarkan 
+                wilayah. Di halaman ini juga disediakan video panduan yang membantu pengguna memahami fungsi dan 
+                tujuan SP4N, yaitu untuk meningkatkan transparansi dan efektivitas dalam penanganan pengaduan 
+                publik.",
+                style = "text-align:justify")
+              )
+        ),
+        fluidRow(
+          box(title = strong("Detail Informasi SP4N LAPOR!"),
+              column(6, div(class = "centered-buttons", actionButton("web", "Tentang LAPOR!", 
+                                                                     class = "full-width-button",
+                                                                     onclick = "window.open('https://www.lapor.go.id/tentang', '_blank')", 
+                                                                     class = "btn-primary"))),
+              column(6, div(class = "centered-buttons", actionButton("vid", "Video LAPOR!", 
+                                                                     class = "full-width-button",
+                                                                     onclick = "window.open('https://youtu.be/pVJlNv0Zgd0?si=v4suxzhQ8Zde4gDj', '_blank')", 
+                                                                     class = "btn-primary"))),
+              width = 12)
+        ),
+        fluidRow(
+          box(title = strong("Definisi Operasional Variabel"), width = 12, 
+              DTOutput("definitionTable"))
         )
       ),
       tabItem(
@@ -303,34 +368,76 @@ body <- dashboardBody(
         fluidRow(
           box(
             width = 12,
-            title = "",
-            status = "success",
+            title = NULL,
+            status = "primary",
+            solidHeader = F,
             column(width = 2,
                    selectInput("kk","Kabupaten/Kota",
-                               choices = unique(data$KabupatenKota), selected = "Kota Surabaya")),
+                               choices = unique(dataa$kabkott), selected = "Kota Surabaya"),
+                   selectInput("tahun2","Tahun",
+                               choices = c("All",unique(data$Tahun))),
+                   selectInput("bulan2","Bulan",
+                               choices = c("All",unique(data$Bulan)))),
             column(width = 3,
                    div(imageOutput("logopr",
-                                   width = "100%", height = "200px"), 
+                                   width = "100%", height = "120px"), 
                        style = "margin-left:30px")),
             column(width = 4,
-                   navPills(id = "topthree",
-                            navPillsItem(
-                              left = "3 Basar Kabupaten Kota",
-                              color = "green"
-                            ),
-                            navPillsItem(
-                              left = textOutput("top1"),
-                              right = textOutput("top11")
-                            ),
-                            navPillsItem(
-                              left = textOutput("top2"),
-                              right = textOutput("top22")
-                            ),
-                            navPillsItem(
-                              left = textOutput("top3"),
-                              right = textOutput("top33")
-                            )
-                   ))
+                   div(class = "nav-item",
+                       div(class = "nav-text-left", "Total Pengaduan"),
+                       div(class = "nav-text-right", textOutput("t1"))
+                   ),
+                   div(class = "nav-item",
+                       div(class = "nav-text-left", "Pengaduan Belum Terverifikasi"),
+                       div(class = "nav-text-right", textOutput("t2"))  
+                   ),
+                   div(class = "nav-item",
+                       div(class = "nav-text-left", "Pengaduan Belum Ditindaklanjuti"),
+                       div(class = "nav-text-right", textOutput("t3"))  
+                   ),
+                   div(class = "nav-item",
+                       div(class = "nav-text-left", "Pengaduan Diproses"),
+                       div(class = "nav-text-right", textOutput("t4"))  
+                   )
+                   ),
+            column(width = 3,
+                   div(class = "nav-item",
+                       div(class = "nav-text-left", "Pengaduan Selesai"),
+                       div(class = "nav-text-right", textOutput("t5"))  
+                   ),
+                   div(class = "nav-item",
+                       div(class = "nav-text-left", "Pengaduan Ditunda"),
+                       div(class = "nav-text-right", textOutput("t6"))  
+                   ),
+                   div(class = "nav-item",
+                       div(class = "nav-text-left", "Pengaduan Diarsip"),
+                       div(class = "nav-text-right", textOutput("t7"))  
+                   )
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            width = 7,
+            box(
+              title = uiOutput("tline"),
+              width = 12,
+              height = "150px",
+              plotOutput("cline"),
+              solidHeader = T,
+              status = "success"
+            )
+          ),
+          column(
+            width = 5,
+            box(
+              title = uiOutput("tscat"),
+              width = 12,
+              height = "150px",
+              plotOutput("cscat"),
+              solidHeader = T,
+              status = "success"
+            )
           )
         )
       )
@@ -587,11 +694,112 @@ server <- function(input,output,session){
    })
    
    output$logopr <- renderImage({
-     ppp <- paste0("www/",input$prov,".png")
+     ppp <- paste0("img/",input$kk,".png")
      list(src=ppp, deleteFile=F,
           height = 160,
           width = 160)
    })
+   
+   df2 <- reactive({
+     aaa <- peng[peng$colm==input$selectedNav,"coln"]
+     if(input$tahun2=="All"){
+       datanya <- dataa %>% 
+         group_by(kabkott) %>% 
+         summarize(total_pengaduan = sum(aaa, na.rm = TRUE)) %>% 
+         arrange(desc(total_pengaduan))
+     }else if(input$tahun2==2023){
+       datanya <- data2023 %>% 
+         group_by(kabkott) %>% 
+         summarize(total_pengaduan = sum(aaa, na.rm = TRUE)) %>% 
+         arrange(desc(total_pengaduan))
+     }else{
+       datanya <- data2024 %>% 
+         group_by(kabkott) %>% 
+         summarize(total_pengaduan = sum(aaa, na.rm = TRUE)) %>% 
+         arrange(desc(total_pengaduan))
+     }
+     datanya
+   })
+   
+   df3 <- reactive({
+     if(input$bulan2=="All"){
+       if(input$tahun2=="All"){
+         df <- dataat
+       }else if(input$tahun2==2023){
+         df <- df2023t
+       }else{
+         df <- df2024t
+       }
+     }else{
+       if(input$tahun2=="All"){
+         df <- dataat
+       }else{
+         fil <- paste(input$bulan2, input$tahun2, sep = " ")
+         df <- dataa %>% filter(periode_update==fil) %>%
+           group_by(kabkott)
+       }
+     }
+     df
+   })
+   
+   output$t1 <- renderText({
+     df3()[df3()$kabkott==input$kk,"Pengaduan"][[1]]
+   })
+   output$t2 <- renderText({
+     df3()[df3()$kabkott==input$kk,"Belum Terverifikasi"][[1]]
+   })
+   output$t3 <- renderText({
+     df3()[df3()$kabkott==input$kk,"Belum Ditindaklanjuti"][[1]]
+   })
+   output$t4 <- renderText({
+     df3()[df3()$kabkott==input$kk,"Proses"][[1]]
+   })
+   output$t5 <- renderText({
+     df3()[df3()$kabkott==input$kk,"Selesai"][[1]]
+   })
+   output$t6 <- renderText({
+     df3()[df3()$kabkott==input$kk,"Tunda"][[1]]
+   })
+   output$t7 <- renderText({
+     df3()[df3()$kabkott==input$kk,"Arsip"][[1]]
+   })
+   
+   
+   output$cline <- renderPlot({
+     if(input$tahun2=="All"){
+       df <- dfk
+       ti <- paste("Tren", input$selectedNav, "di",input$kk, "Tahun 2023-2024")
+     }else if(input$tahun2==2023){
+       df <- dfk23
+       ti <- paste("Tren", input$selectedNav, "di",input$kk, "Tahun 2023")
+     }else{
+       df <- dfk24
+       ti <- paste("Tren", input$selectedNav, "di",input$kk, "Tahun 2024")
+     }
+     
+     
+     aaa <- cat(peng[peng$colm==input$selectedNav,"coln"])
+     df4 <- df %>% filter(kabkott==input$kk)
+     ggplot(df4, aes(x = periode_update, y = Pengaduan)) +
+       geom_line(color = "maroon", size = 1) +
+       geom_point(color = "orange", size = 4) + # menambahkan titik pada garis
+       labs(title = aaa,
+            x = "Periode Update",
+            y = "Jumlah Pengaduan") +
+       theme_minimal() +
+       scale_x_date(date_labels = "%b %y", date_breaks = "1 month")
+   })
+   
+   output$definitionTable <- renderDT({
+     datatable(
+       defi,
+       escape = FALSE, 
+       options = list(pageLength = 10, dom = 't', ordering = FALSE),
+       rownames = FALSE,
+       style = "bootstrap" # This gives it the knitr-like look in shinydashboard
+     )
+   })
+   
 }
 
-shinyApp(ui = ui, server = server, options = list(launch.browser = TRUE))
+shinyApp(ui = ui, server = server, options = list(launch.browser = T))
