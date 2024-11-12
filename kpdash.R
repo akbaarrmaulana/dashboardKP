@@ -304,18 +304,18 @@ body <- dashboardBody(
         tabName = "home",
         fluidRow(
           width = 12,
-          div(box(selectInput("tahun","",
+          div(box(selectInput("tahun","Tahun",
                               choices = c("All",unique(data$Tahun)), selected = "2023"),
                   width = 2, 
-                  title = strong("Filter Tahun"),height = 70),
-              box(selectInput("bulan","",
+                  status = "primary",height = 70),
+              box(selectInput("bulan","Bulan",
                               choices = c("All",unique(data$Bulan))),
                   width = 2, 
-                  title = strong("Filter Bulan"),height = 90),
-              box(selectInput("var","",
-                              choices = coln),width = 3,
-                  title = strong("Filter Status"),height = 90),
-              infoBoxOutput(outputId = "jml", width = 5),
+                  status = "primary",height = 90),
+              box(selectInput("var","Status Pengaduan",
+                              choices = coln),width = 2,
+                  status = "primary",height = 90),
+              infoBoxOutput(outputId = "jml", width = 6),
               style = "margin-top:20px")),
         fluidRow(
           column(width = 7,
@@ -330,7 +330,7 @@ body <- dashboardBody(
           column(width = 5,
                  box(
                    title = uiOutput("toph"),
-                   radioButtons(inputId = "radbut", " ", choices = c("Terendah","Tertinggi"),inline = T),
+                   radioButtons(inputId = "radbut", " ", choices = c("Tertinggi","Terendah"),inline = T),
                    width = 12,
                    height = "auto",
                    plotOutput("bar", height = "350px"),
@@ -418,7 +418,7 @@ body <- dashboardBody(
         ),
         fluidRow(
           column(
-            width = 7,
+            width = 12,
             box(
               title = uiOutput("tline"),
               width = 12,
@@ -428,17 +428,6 @@ body <- dashboardBody(
               status = "success"
             )
           ),
-          column(
-            width = 5,
-            box(
-              title = uiOutput("tscat"),
-              width = 12,
-              height = "150px",
-              plotOutput("cscat"),
-              solidHeader = T,
-              status = "success"
-            )
-          )
         )
       )
     )
@@ -497,8 +486,13 @@ server <- function(input,output,session){
   })
   
    output$jml <- renderValueBox({
-    if(input$tahun=="All"){
-      st = "All"
+    if(input$var=="All"){
+      tit <- tags$h4(paste("Total Pengaduan"), style = "font-Weight:bold")
+    }else{
+      tit <- tags$h4(paste("Jumlah Pengaduan ",input$var), style = "font-Weight:bold")
+    }
+     if(input$tahun=="All"){
+      st = "2023-2024"
       a1 <- data %>%
         group_by(`KabupatenKota`) %>%
         summarise(X= sum(get(input$var)))
@@ -522,8 +516,8 @@ server <- function(input,output,session){
       a2 <- df1 %>% summarise(sum(get(input$var)))
       st <- fil
     }
-    infoBox(tags$h4(paste("Jumlah ",input$var), style = "font-Weight:bold"),
-            value = tags$h6(st),
+    infoBox(tit,
+            value = tags$h6(paste("Tahun",st)),
             subtitle = tags$h4(paste(sum(a2))),
             color = "maroon",
             fill = F,
@@ -541,7 +535,13 @@ server <- function(input,output,session){
      }else{
        b <- input$bulan
      }
-     strong(paste("Sebaran",input$var,b,a))
+     
+     if(input$var=="All"){
+       tit <- paste("Sebaran Total Pengaduan",b,a)
+     }else{
+       tit <- paste("Sebaran Pengaduan",input$var,b,a)
+     }
+     strong(tit)
    })
    
    output$toph <- renderUI({
@@ -555,7 +555,12 @@ server <- function(input,output,session){
      }else{
        b <- input$bulan
      }
-     strong(paste("Top 5",input$var,input$radbut,b,a))
+     if(input$var=="All"){
+       tit <- paste("Top 5 Pengaduan",input$radbut,b,a)
+     }else{
+       tit <- paste("Top 5 Pengaduan",input$var,input$radbut,b,a)
+     }
+     strong(tit)
    })
    
    output$map <- renderPlotly({
@@ -623,7 +628,8 @@ server <- function(input,output,session){
    })
    
    max_barko_value <- reactive({
-       dtot <- datakota() %>% 
+     dfgab <- rbind(datakota(),datakab())
+       dtot <- dfgab %>% 
          group_by(KabupatenKota) %>% 
          summarize(total_pengaduan = sum(get(input$var), na.rm = TRUE)) %>% 
          arrange(desc(total_pengaduan))
@@ -641,7 +647,7 @@ server <- function(input,output,session){
      ylim_max <- max_barko_value() * 1.05
      p3 <- ggplot(dtot, aes(x = reorder(KabupatenKota, arr), y = total_pengaduan)) + 
        geom_bar(stat = "identity", fill = "maroon") +  
-       labs(x = "Kabupaten/Kota", y = "Jumlah Pengaduan") +  
+       labs(x = "Kabupaten", y = "Jumlah Pengaduan") +  
        theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5, margin = margin(t = 10))) + 
        geom_text(aes(label = total_pengaduan), vjust = -0.5, 
                  color = "black", size = 3)+
@@ -658,7 +664,7 @@ server <- function(input,output,session){
      ylim_max <- max_barko_value() * 1.05
      p4 <- ggplot(dtot, aes(x = reorder(KabupatenKota, arr), y = total_pengaduan)) + 
        geom_bar(stat = "identity", fill = "maroon") +  
-       labs(x = "Kabupaten/Kota", y = "Jumlah Pengaduan") +  
+       labs(x = "Kota", y = "Jumlah Pengaduan") +  
        theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5, margin = margin(t = 10))) + 
        geom_text(aes(label = total_pengaduan), vjust = -0.5, 
                  color = "black", size = 3)+
@@ -677,7 +683,12 @@ server <- function(input,output,session){
      }else{
        b <- input$bulan
      }
-     strong(paste("Jumlah",input$var,"Setiap Kabupaten pada",b,a))
+     if(input$var=="All"){
+       tit <- paste("Jumlah Pengaduan Setiap Kabupaten -",b,a)
+     }else{
+       tit <- paste("Jumlah Pengaduan",input$var,"Setiap Kabupaten -",b,a)
+     }
+     strong(tit)
    })
    output$tbarko <- renderUI({
      if(input$tahun=="All"){
@@ -690,7 +701,12 @@ server <- function(input,output,session){
      }else{
        b <- input$bulan
      }
-     strong(paste("Jumlah",input$var,"Setiap Kota pada",b,a))
+     if(input$var=="All"){
+       tit <- paste("Jumlah Pengaduan Setiap Kota -",b,a)
+     }else{
+       tit <- paste("Jumlah Pengaduan",input$var,"Setiap Kota -",b,a)
+     }
+     strong(tit)
    })
    
    output$logopr <- renderImage({
@@ -743,7 +759,7 @@ server <- function(input,output,session){
    })
    
    output$t1 <- renderText({
-     df3()[df3()$kabkott==input$kk,"Pengaduan"][[1]]
+     df3()[df3()$kabkott==input$kk,"All"][[1]]
    })
    output$t2 <- renderText({
      df3()[df3()$kabkott==input$kk,"Belum Terverifikasi"][[1]]
@@ -752,19 +768,19 @@ server <- function(input,output,session){
      df3()[df3()$kabkott==input$kk,"Belum Ditindaklanjuti"][[1]]
    })
    output$t4 <- renderText({
-     df3()[df3()$kabkott==input$kk,"Proses"][[1]]
+     df3()[df3()$kabkott==input$kk,"Diproses"][[1]]
    })
    output$t5 <- renderText({
      df3()[df3()$kabkott==input$kk,"Selesai"][[1]]
    })
    output$t6 <- renderText({
-     df3()[df3()$kabkott==input$kk,"Tunda"][[1]]
+     df3()[df3()$kabkott==input$kk,"Ditunda"][[1]]
    })
    output$t7 <- renderText({
-     df3()[df3()$kabkott==input$kk,"Arsip"][[1]]
+     df3()[df3()$kabkott==input$kk,"Diarsip"][[1]]
    })
    
-   
+
    output$cline <- renderPlot({
      if(input$tahun2=="All"){
        df <- dfk
@@ -780,7 +796,22 @@ server <- function(input,output,session){
      
      aaa <- cat(peng[peng$colm==input$selectedNav,"coln"])
      df4 <- df %>% filter(kabkott==input$kk)
-     ggplot(df4, aes(x = periode_update, y = Pengaduan)) +
+     if(input$selectedNav=="Total Pengaduan" || is.null(input$selectedNav)){
+       ynya <- df4$All
+     }else if(input$selectedNav=="Pengaduan Belum Terverifikasi"){
+       ynya <- df4$`Belum Terverifikasi`
+     }else if(input$selectedNav=="Pengaduan Belum Ditindaklanjuti"){
+       ynya <- df4$`Belum Ditindaklanjuti`
+     }else if(input$selectedNav=="Pengaduan Diproses"){
+       ynya <- df4$Diproses
+     }else if(input$selectedNav=="Pengaduan Selesai"){
+       ynya <- df4$Selesai
+     }else if(input$selectedNav=="Pengaduan Ditunda"){
+       ynya <- df4$Ditunda
+     }else{
+       ynya <- df4$Diarsip
+     }
+     ggplot(df4, aes(x = periode_update, y = ynya)) +
        geom_line(color = "maroon", size = 1) +
        geom_point(color = "orange", size = 4) + # menambahkan titik pada garis
        labs(title = aaa,
@@ -788,6 +819,19 @@ server <- function(input,output,session){
             y = "Jumlah Pengaduan") +
        theme_minimal() +
        scale_x_date(date_labels = "%b %y", date_breaks = "1 month")
+   })
+   output$tline <- renderUI({
+     if(input$tahun2=="All"){
+       a <- "2023-2024"
+     }else{
+       a <- input$tahun
+     }
+     if(input$bulan2=="All"){
+       b <- ""
+     }else{
+       b <- input$bulan
+     }
+     strong(paste("Tren",input$selectedNav,"Bulanan",b,a))
    })
    
    output$definitionTable <- renderDT({

@@ -10,12 +10,12 @@ paste("Indo","lur", sep = " ")
 unique(data$Tahun)
 dd <- paste("Januari","2023", sep = " ")
 df <- data %>% filter(periode_update==dd)
-colnames(data) <- c("periode_update","Bulan","Tahun","KabupatenKota","Pengaduan",
+colnames(data) <- c("periode_update","Bulan","Tahun","KabupatenKota","All",
                     "Belum Terverifikasi","Belum Ditindaklanjuti",
-                    "Proses","Selesai","Tunda","Arsip")
-coln <- c("Pengaduan",
+                    "Diproses","Selesai","Ditunda","Diarsip")
+coln <- c("All",
           "Belum Terverifikasi","Belum Ditindaklanjuti",
-          "Proses","Selesai","Tunda","Arsip")
+          "Diproses","Selesai","Ditunda","Diarsip")
 
 df2023 <- data %>% filter(Tahun==2023)
 df2024 <- data %>% filter(Tahun==2024)
@@ -25,7 +25,7 @@ md <- jatim %>%
   left_join(aa, by = c("ADM2_EN" = "KabupatenKota"))
 
 p1 <- ggplot(data = md) +
-  geom_sf(aes(fill = Pengaduan)) +
+  geom_sf(aes(fill = All)) +
   scale_fill_gradient(low = "lightblue", high = "darkblue") +
   labs(fill = "Pengaduan") +
   theme_minimal()+
@@ -35,32 +35,32 @@ p1 <- ggplot(data = md) +
 
 dtotma <- data %>% 
   group_by(KabupatenKota) %>% 
-  summarize(total_pengaduan = sum(Pengaduan, na.rm = TRUE)) %>% 
+  summarize(total_pengaduan = sum(All, na.rm = TRUE)) %>% 
   arrange(desc(total_pengaduan))%>% 
   slice_max(order_by = total_pengaduan, n = 5)
 dtot23ma <- df2023 %>% 
   group_by(KabupatenKota) %>% 
-  summarize(total_pengaduan = sum(Pengaduan, na.rm = TRUE)) %>% 
+  summarize(total_pengaduan = sum(All, na.rm = TRUE)) %>% 
   arrange(desc(total_pengaduan))%>% 
   slice_max(order_by = total_pengaduan, n = 5)
 dtot24ma <- df2024 %>% 
   group_by(KabupatenKota) %>% 
-  summarize(total_pengaduan = sum(Pengaduan, na.rm = TRUE)) %>% 
+  summarize(total_pengaduan = sum(All, na.rm = TRUE)) %>% 
   arrange(desc(total_pengaduan))%>% 
   slice_max(order_by = total_pengaduan, n = 5)
 dtotmi <- data %>% 
   group_by(KabupatenKota) %>% 
-  summarize(total_pengaduan = sum(Pengaduan, na.rm = TRUE)) %>% 
+  summarize(total_pengaduan = sum(All, na.rm = TRUE)) %>% 
   arrange(desc(total_pengaduan))%>% 
   slice_min(order_by = total_pengaduan, n = 5)
 dtot23mi <- df2023 %>% 
   group_by(KabupatenKota) %>% 
-  summarize(total_pengaduan = sum(Pengaduan, na.rm = TRUE)) %>% 
+  summarize(total_pengaduan = sum(All, na.rm = TRUE)) %>% 
   arrange(desc(total_pengaduan))%>% 
   slice_min(order_by = total_pengaduan, n = 5)
 dtot24mi <- df2024 %>% 
   group_by(KabupatenKota) %>% 
-  summarize(total_pengaduan = sum(Pengaduan, na.rm = TRUE)) %>% 
+  summarize(total_pengaduan = sum(All, na.rm = TRUE)) %>% 
   arrange(desc(total_pengaduan))%>% 
   slice_min(order_by = total_pengaduan, n = 5)
 
@@ -107,7 +107,7 @@ data2023 <- dataa %>% filter(Tahun==2023)
 data2024 <- dataa %>% filter(Tahun==2024)
 d2023 <- data2023 %>% 
   group_by(kabkott) %>% 
-  summarize(total_pengaduan = sum(Pengaduan, na.rm = TRUE)) %>% 
+  summarize(total_pengaduan = sum(All, na.rm = TRUE)) %>% 
   arrange(desc(total_pengaduan))
 d2023[d2023$kabkott=="Kota Surabaya", "total_pengaduan"]
 
@@ -119,14 +119,14 @@ aaa <- peng[peng$colm=="Total Pengaduan","coln"]
 
 df2023t <- data2023 %>%
   group_by(kabkott) %>%
-  summarise(across(Pengaduan:Arsip,sum))
+  summarise(across(All:Diarsip,sum))
 df2024t <- data2024 %>%
   group_by(kabkott) %>%
-  summarise(across(Pengaduan:Arsip,sum))
+  summarise(across(All:Diarsip,sum))
 dataat <- dataa %>%
   group_by(kabkott) %>%
-  summarise(across(Pengaduan:Arsip,sum))
-df2023t[df2023t$kabkott=="Kota Surabaya","Pengaduan"][[1]]
+  summarise(across(All:Diarsip,sum))
+df2023t[df2023t$kabkott=="Kota Surabaya","All"][[1]]
 df2023k <- data2023 %>% filter(kabkott=="Kota Surabaya")
 
 Sys.setlocale("LC_TIME", "id_ID.UTF-8")
@@ -140,7 +140,7 @@ dfk$periode_update <- dmy(paste("01",dfk$periode_update))
 
 df2023k <- dfk23 %>% filter(kabkott=="Kota Surabaya")
 
-ggplot(df2023k, aes(x = periode_update, y = Pengaduan)) +
+ggplot(df2023k, aes(x = periode_update, y = All)) +
   geom_line(color = "maroon", size = 1) +
   geom_point(color = "orange", size = 4) + # menambahkan titik pada garis
   labs(title = "Jumlah Pengaduan di Kota Surabaya per Bulan",
@@ -152,9 +152,9 @@ ggplot(df2023k, aes(x = periode_update, y = Pengaduan)) +
 ####
 defi <- data.frame(
   Variabel = c("Kabupaten/Kota", "All", "Belum Terverifikasi", 
-               "Belum Ditindaklanjuti", "Proses", "Selesai", "Tunda", "Arsip"),
+               "Belum Ditindaklanjuti", "Diproses", "Selesai", "Ditunda", "Diarsip"),
   Definisi_Operasional = c(
-    "Nama kabupaten atau kota tempat pengaduan terjadi. Contoh: 'Pacitan', 'Ponorogo', 'Trenggalek'.",
+    "Nama kabupaten atau kota tempat pengaduan terjadi. ",
     "Total jumlah pengaduan yang masuk pada periode tersebut untuk kabupaten atau kota yang bersangkutan.",
     "Jumlah pengaduan yang belum diverifikasi atau dicek kebenarannya oleh pihak terkait.",
     "Jumlah pengaduan yang sudah diverifikasi tetapi belum mendapatkan tindak lanjut atau respons dari pihak terkait.",
