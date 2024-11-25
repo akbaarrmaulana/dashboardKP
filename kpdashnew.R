@@ -24,7 +24,7 @@ dropdownMenuCustom <- function() {
 }
 header <- dashboardHeader(title = tagList(span(class = "logo-lg", "Dashboard"),
                                           img(
-                                            src = "https://raw.githubusercontent.com/akbaarrmaulana/akbaarrepo/main/lapor.png",
+                                            src = "https://raw.githubusercontent.com/akbaarrmaulana/dashboardKP/refs/heads/main/dash.png",
                                             style = "width: 35px"
                                           )),
                           titleWidth = 320,
@@ -33,10 +33,7 @@ sidebar <- dashboardSidebar(width = 320,
                             sidebarMenu(
                               menuItem("Statistikm Penilaian Pengunjung",
                                        tabName = "nilai",
-                                       icon = icon("mobile-screen-button")),
-                              menuItem("Update Data",
-                                       tabName = "dataup",
-                                       icon = icon("hotel"))
+                                       icon = icon("square-poll-vertical"))
                             ))
 
 body <- dashboardBody(
@@ -306,6 +303,40 @@ body <- dashboardBody(
             mendorong keterbukaan informasi sekaligus memberdayakan masyarakat dalam membangun 
             solusi yang berkelanjutan."
           )
+        ),
+        fluidRow(
+          column(
+            width = 7,
+            box(
+              title = uiOutput("tbar"),
+              width = 12,
+              height = "150px",
+              plotOutput("bar1"),
+              solidHeader = T,
+              status = "success"
+            )
+          ),
+          column(
+            width = 5,
+            box(
+              title = uiOutput("tpie"),
+              width = 12,
+              height = "150px",
+              plotOutput("pie1"),
+              solidHeader = T,
+              status = "success"
+            )
+          )
+        ),
+        fluidRow(
+          box(
+            title = uiOutput("tline"),
+            width = 12,
+            height = "150px",
+            plotOutput("line1"),
+            solidHeader = T,
+            status = "success"
+          )
         )
       )
     )
@@ -319,13 +350,13 @@ ui = dashboardPage(header = header,
 server <- function(input,output,session){
   output$jml <- renderValueBox({
     # Menentukan judul InfoBox
-    tit <- tags$h4("Total Pengunjung Yang Memberi Penilaian", 
+    tit <- tags$h4("Jumlah Pengunjung Yang Memberi Penilaian", 
                    style = "font-weight:bold; white-space: normal; word-wrap: break-word;")
     
     # Menentukan periode berdasarkan input bulan tahun
-    if (input$bulan == "All" & input$tahun == "All") {
+    if (input$tahun == "All") {
       st <- "Semua Periode"
-      a1 <- dfn %>% 
+      a1 <- dfn %>%
         summarise(total = sum(sangatpuas + puas + cukup+ tidakpuas + sangattidakpuas, na.rm = T))
       a2 <- a1$total
     } else if (input$bulan == "All") {
@@ -351,6 +382,145 @@ server <- function(input,output,session){
             icon = icon("chart-bar"))
   })
   
+  df_long <- reactive({
+    if(input$tahun=="All"){
+      databar <- dfn
+    }else if(input$bulan=="All"){
+      st <- input$tahun
+      databar <- dfn %>% filter(Tahun==st)
+    }else{
+      st <- paste(input$bulan, input$tahun, sep = " ")
+      databar <- dfn %>% filter(periode_update==dd)
+    }
+    
+    df_long <- databar %>%
+      pivot_longer(cols = c(sangatpuas, puas, cukup, tidakpuas, sangattidakpuas),
+                   names_to = "Kategori", values_to = "Jumlah") %>%
+      group_by(sex, Kategori) %>%
+      summarise(Jumlah = sum(Jumlah), .groups = "drop")
+    df_long$Kategori <- factor(df_long$Kategori, levels = c("sangatpuas", "puas", "cukup", "tidakpuas", "sangattidakpuas"))
+    df_long
+  })
+  output$bar1 <- renderPlot({
+    df_long <- df_long()
+    total_pengunjung <- sum(df_long$Jumlah)
+    sangatpuas_puas <- df_long %>%
+      filter(Kategori %in% c("sangatpuas", "puas")) %>%
+      summarise(total_sangatpuas_puas = sum(Jumlah))
+    persentase <- (sangatpuas_puas$total_sangatpuas_puas / total_pengunjung) * 100
+    
+    
+    ggplot(df_long, aes(x = Kategori, y = Jumlah, fill = sex)) +
+      geom_bar(stat = "identity", position = "dodge") +  
+      geom_text(aes(label = Jumlah), position = position_dodge(width = 0.9), vjust = -0.5, size = 3) +  
+      labs(x = "Kategori Penilaian", y = "Jumlah Pengunjung") +
+      scale_fill_manual(values = c("Laki-Laki" = "#34a246", "Perempuan" = "#105879")) +  
+      theme_minimal() +  
+      theme(
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+      )+annotate("text", x = 3, y = max(df_long$Jumlah) * 0.75, label = paste("Tingkat Kepuasan Mencapai",round(persentase, 1),"%"), color = "black", 
+                 size = 4.4, fontface = "bold", hjust = 0.5, vjust = 0.5)
+  })
+  
+  output$tbar <- renderUI({
+    if(input$tahun=="All"){
+      a <- "2023-2024"
+    }else{
+      a <- input$tahun
+    }
+    if(input$bulan=="All"){
+      b <- ""
+    }else{
+      b <- input$bulan
+    }
+    
+    tit <- paste("Jumlah Pengunjung Berdasarkan Kategori Penilaian dan Jenis Kelamin",b,a)
+    strong(tit)
+  })
+  
+  output$pie1 <- renderPlot({
+    df_long <- df_long()
+    df_sex <- df_long %>%
+      group_by(sex) %>%
+      summarise(total = sum(Jumlah))
+    df_sex$fraction <-  df_sex$total / sum(df_sex$total)
+    df_sex$ymax = cumsum(df_sex$fraction)
+    df_sex$ymin = c(0, head(df_sex$ymax, n=-1))
+    custom_colors <- c("Laki-Laki" = "#34a246", "Perempuan" = "#105879")
+    ggplot(df_sex, aes(ymax = ymax, ymin = ymin, xmax = 4, xmin = 3, fill = sex)) +
+      geom_rect() +
+      coord_polar(theta = "y") +  # Convert to pie chart
+      xlim(c(2, 4)) +  # Create space in the center for donut effect
+      scale_fill_manual(values = custom_colors) +  # Set custom colors
+      theme_void() +
+      theme(legend.position = "top") +
+      # Add percentage labels
+      geom_text(aes(x = 3.5, y = (ymax + ymin) / 2, label = paste0(round(fraction * 100, 1), "%")),
+                color = "white", size = 6)
+  })
+  
+  output$tpie <- renderUI({
+    if(input$tahun=="All"){
+      a <- "2023-2024"
+    }else{
+      a <- input$tahun
+    }
+    if(input$bulan=="All"){
+      b <- ""
+    }else{
+      b <- input$bulan
+    }
+    
+    tit <- paste("Proporsi Jenis Kelamin Pengunjung -",b,a)
+    strong(tit)
+  })
+  
+  output$line1 <- renderPlot({
+    if(input$tahun=="All"){
+      ddfn <- dfn
+    }else{
+      ddfn <- dfn %>% filter(Tahun==input$tahun)
+    }
+    month_map <- c("Januari" = "January", "Februari" = "February", "Maret" = "March", "April" = "April", "Mei" = "May",
+                   "Juni" = "June", "Juli" = "July", "Agustus" = "August", "September" = "September", "Oktober" = "October",
+                   "November" = "November", "Desember" = "December")
+    dfnp <- ddfn %>%
+      mutate(Bulan = recode(Bulan, !!!month_map)) %>% 
+      mutate(periode_update = dmy(paste("01", Bulan," ",Tahun))) %>%  # Convert to Date format# Recode month names
+      arrange(periode_update)  # Arrange by date
+    
+    # Summarize total visitors
+    df_total <- dfnp %>%
+      mutate(total_visitors = sangatpuas + puas + tidakpuas + sangattidakpuas + cukup) %>%  # Calculate total visitors
+      select(periode_update, sex, total_visitors)
+    
+    # Create the line chart
+    ggplot(df_total, aes(x = periode_update, y = total_visitors, color = sex, group = sex)) +
+      geom_line(size = 1) +
+      geom_point(aes(shape = sex), size = 3) +
+      labs(
+        x = "Periode Update",
+        y = "Jumlah Pengunjung",
+        color = "Jenis Kelamin",
+        shape = "Jenis Kelamin"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+      scale_color_manual(values = c("Laki-Laki" = "#34a246", "Perempuan" = "#105879")) +
+      scale_shape_manual(values = c(16, 17))
+  })
+  
+  output$tline <- renderUI({
+    if(input$tahun=="All"){
+      a <- "2023-2024"
+    }else{
+      a <- input$tahun
+    }
+    
+    tit <- paste("Tren Jumlah Pengunjung Berdasarkan Jenis Kelamin -",a)
+    strong(tit)
+  })
 }
 
 shinyApp(ui = ui, server = server, options = list(launch.browser = T))
